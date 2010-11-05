@@ -1,0 +1,638 @@
+Links:
+
+http://aleksandarsavic.com/nginx-redirect-wwwexamplecom-requests-to-examplecom-or-vice-versa/
+http://wiki.nginx.org/NginxRubyonRailsMongrel
+
+
+1.  Chapter1 NGINX INSTALLATION HOWTO
+
+2.  Chapter2: PERIWINKLEZONE NGINX - READYMADE INIT SCRIPT FOR        
+                                       CONVENTIONAL NGINX INSTALLATION
+
+3.  Chapter3:  NGINX INSTALLATION with /opt/nginxroot as the base  
+                                   directory
+
+4.  Chapter4:  NGINX - READYMADE INIT SCRIPT FOR NON-conventional nginx installation (/opt)
+
+5.  Chapter5:  Nginx tips and tricks
+
+6.  Chapter6: Nginx FAQ
+
+7.  
+
+
+------------------------------------------------------------------------------------------------
+                                 ####Chapter1 NGINX INSTALLATION HOWTO #########
+
+This is available in your sedin and rsrbackup email:
+
+Search for:  PERIWINKLEZONE NGINX TUTORIAL ( caps all)
+
+
+NGINX INSTALLATION:
+
+1. #cd /opt
+
+2. #wget http://sysoev.ru/nginx/nginx-0.8.52.tar.gz  ( Download Nginx tarball)
+
+3. #wget http://sourceforge.net/projects/pcre/files/pcre/8.10/pcre-8.10.tar.bz2/download  (Download pcre tarball)
+
+4. #wget http://www.openssl.org/source/openssl-0.9.8o.tar.gz  ( Download openssl)
+
+5. Note:  All these files are now in your current directory, i.e., /opt directory.
+
+6. #tar zxvf nginx-0.8.52.tar.gz (uncompress nginx tarball)
+
+7. #bunzip2 pcre-8.10.tar.bz2    (uncompress pcre tarball)
+   #tar xvf pcre-8.10.tar
+
+8. #tar zxvf openssl-0.9.8o.tar.gz (uncompress openssh tarball)
+
+9. #cd nginx-0.8.52
+
+10.Note:  Make sure you have passenger gem installed.  Else install it:
+   #apt-get install passenger
+11.Make sure you have curl deb package installed.  Else install it:
+
+   #apt-get install curl
+
+12. mkdir -p /var/lib/nginx/tmp/proxy
+13. mkdir -p /var/lib/nginx/tmp/fastcgi
+14. mkdir -p /var/lib/nginx/tmp/nginx/clientbody
+
+12.#./configure --prefix=/usr --conf-path=/etc/nginx/nginx.conf --http-log-path=/var/log/nginx/access.log --http-proxy-temp-path=/var/lib/nginx/tmp/proxy --http-fastcgi-temp-path=/var/lib/nginx/tmp/fastcgi --error-log-path=/var/log/nginx/error.log --pid-path=/var/run/nginx.pid --http-client-body-temp-path=/var/tmp/nginx/clientbody --lock-path=/var/log/nginx/nginx.lock --with-http_realip_module --with-http_realip_module --with-http_flv_module --with-http_ssl_module --with-http_gzip_static_module --with-http_stub_status_module --with-pcre=../pcre-8.10/ --with-openssl=../openssl-0.9.8o --add-module=/usr/lib/ruby/gems/1.8/gems/passenger-3.0.0/ext/nginx/
+
+( Note:  Also, please note the additional options from the email "ompile from source" nginx email( from engineyard).  I think the configure options given here is more that enough)
+ 
+( Make sure you make appropriate changes to the versions, for eg. passenger-3.0.0, you should make sure all the paths are correct, else...??)
+
+ #make  ( run the make command)
+
+ #make install (ya..)
+
+16. nginx -v  ( get the version of NGINX)
+
+17. nginx -V  ( get the complete configuration options of nginx, great one)
+
+18. which nginx
+   /usr/sbin/nginx
+19. nginx -t 
+
+             ( you should get: the configuration file /etc/nginx/nginx.conf syntax is ok
+                               configuration file /etc/nginx/nginx.conf test is successful)
+
+-----------------------------------------------------------------------------------------------------------------------
+
+                        #####Chapter2: PERIWINKLEZONE NGINX - READYMADE INIT SCRIPT FOR        
+                                       CONVENTIONAL NGINX INSTALLATION ####
+
+This is available in your sedin email and rsrbackup.  search for nging INIT, CONVENTIONAL
+
+
+
+Following is a perfectly working NGINX start/stop/restart init script which I got from: http://openmymind.net/nginx_start_stop.txt
+
+But, I changed the DAEMON from /usr/local/sbin/nginx to /usr/sbin/nginx, thats the only change I made....!!
+
+
+
+Start/stop init Script
+
+#!/bin/sh
+
+#This is a start script for nginx. Tested on Unbuntu Edge. 
+#Should work on Ubuntu, Debian and probably a few other Linux distros.
+#Change DAEMON and CONFIG_FILE  if neccessary
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+
+
+#DAEMON=/usr/local/nginx/sbin/nginx
+DAEMON=/usr/sbin/nginx
+
+CONFIG_FILE=/etc/nginx/nginx.conf
+
+
+DAEMON_OPTS="-c $CONFIG_FILE"
+NAME=nginx
+DESC="nginx web server"
+PIDFILE=/var/run/$NAME.pid 
+SCRIPTNAME=/etc/init.d/$NAME
+
+
+#only run if binary can be found
+test -x $DAEMON || exit 0
+
+set -e
+
+#import init-functions
+. /lib/lsb/init-functions
+
+case "$1" in
+start)
+log_daemon_msg "Starting $DESC" $NAME
+if ! start-stop-daemon --start --quiet\
+    --pidfile $PIDFILE --exec $DAEMON -- $DAEMON_OPTS ; then
+    log_end_msg 1
+    else
+    log_end_msg 0
+fi
+;;
+stop)
+log_daemon_msg "Stopping $DESC" $NAME
+if start-stop-daemon --quiet --stop --oknodo --retry 30\
+    --pidfile $PIDFILE --exec $DAEMON; then
+    rm -f $PIDFILE
+    log_end_msg 0
+    else
+    log_end_msg 1
+fi
+;;
+reload)
+log_daemon_msg "Reloading $DESC configuration" $NAME
+if start-stop-daemon --stop --signal 2 --oknodo --retry 30\
+    --quiet --pidfile $PIDFILE --exec $DAEMON; then
+    if start-stop-daemon --start --quiet  \
+        --pidfile $PIDFILE --exec $DAEMON -- $DAEMON_OPTS ; then
+        log_end_msg 0
+        else
+        log_end_msg 1
+    fi
+    else
+    log_end_msg 1
+fi
+;;
+restart|force-reload)
+$0 stop
+sleep 1
+$0 start
+;;
+*)
+echo "Usage: $SCRIPTNAME {start|stop|restart|reload|force-reload}" >&2
+exit 1
+;;
+esac
+
+exit 0
+
+
+
+-----------------------------------------------------------------------------------------------
+
+                    ###Chapter3:  NGINX INSTALLATION with /opt/nginxroot as the base  
+                                   directory###
+
+This is available in your sedin email and rsrbackup.  Please search with  opt directory nginx
+
+
+
+1.  This is an extension of the previous one on installing nginx.  All the steps are same except the configure arguments.  Also please make sure whether you need user=www-data and group=www-data.
+
+
+configure arguments: --prefix=/opt/nginxroot/usr --conf-path=/opt/nginxroot/etc/nginx/nginx.conf --http-log-path=/opt/nginxroot/var/log/nginx/access.log --http-proxy-temp-path=/opt/nginxroot/var/lib/nginx/tmp/proxy --http-fastcgi-temp-path=/opt/nginxroot/var/lib/nginx/tmp/fastcgi --error-log-path=/opt/nginxroot/var/log/nginx/error.log --pid-path=/opt/nginxroot/var/run/nginx.pid --http-client-body-temp-path=/opt/nginxroot/var/tmp/nginx/clientbody --lock-path=/opt/nginxroot/var/log/nginx/nginx.lock --with-http_realip_module --with-http_realip_module --with-http_flv_module --with-http_ssl_module --with-http_gzip_static_module --with-http_stub_status_module --with-pcre=../pcre-8.10/ --with-openssl=../openssl-0.9.8o --add-module=/usr/lib/ruby/gems/1.8/gems/passenger-3.0.0/ext/nginx/
+
+2. Its just the same as the previous one.  but everything will be based in /opt/nginxroot.  This I made it for ease of understanding and I think i have done a good job on that.
+
+
+------------------------------------------------------------------------------------------
+
+Chapter4:  NGINX - READYMADE INIT SCRIPT FOR NON-conventional nginx installation (/opt)
+
+This is available in your sedin email as well as rsrbackup.
+
+search terms:  non-conventional nginx init script
+
+#!/bin/sh
+
+#This is a start script for nginx. Tested on Unbuntu Edge. 
+#Should work on Ubuntu, Debian and probably a few other Linux distros.
+#Change DAEMON and CONFIG_FILE  if neccessary
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+
+
+#DAEMON=/usr/local/nginx/sbin/nginx
+#DAEMON=/usr/sbin/nginx
+DAEMON=/opt/nginxroot/usr/sbin/nginx
+
+CONFIG_FILE=/opt/nginxroot/etc/nginx/nginx.conf
+
+
+DAEMON_OPTS="-c $CONFIG_FILE"
+NAME=nginx
+DESC="nginx web server"
+PIDFILE=/opt/nginxroot/var/run/$NAME.pid 
+SCRIPTNAME=/etc/init.d/$NAME
+
+
+#only run if binary can be found
+test -x $DAEMON || exit 0
+
+set -e
+
+#import init-functions
+. /lib/lsb/init-functions
+
+case "$1" in
+start)
+log_daemon_msg "Starting $DESC" $NAME
+if ! start-stop-daemon --start --quiet\
+    --pidfile $PIDFILE --exec $DAEMON -- $DAEMON_OPTS ; then
+    log_end_msg 1
+    else
+    log_end_msg 0
+fi
+;;
+stop)
+log_daemon_msg "Stopping $DESC" $NAME
+if start-stop-daemon --quiet --stop --oknodo --retry 30\
+    --pidfile $PIDFILE --exec $DAEMON; then
+    rm -f $PIDFILE
+    log_end_msg 0
+    else
+    log_end_msg 1
+fi
+;;
+reload)
+log_daemon_msg "Reloading $DESC configuration" $NAME
+if start-stop-daemon --stop --signal 2 --oknodo --retry 30\
+    --quiet --pidfile $PIDFILE --exec $DAEMON; then
+    if start-stop-daemon --start --quiet  \
+        --pidfile $PIDFILE --exec $DAEMON -- $DAEMON_OPTS ; then
+        log_end_msg 0
+        else
+        log_end_msg 1
+    fi
+    else
+    log_end_msg 1
+fi
+;;
+restart|force-reload)
+$0 stop
+sleep 1
+$0 start
+;;
+*)
+echo "Usage: $SCRIPTNAME {start|stop|restart|reload|force-reload}" >&2
+exit 1
+;;
+esac
+
+exit 0
+
+--------------------------------------------------------------------------------------------------
+Chapter 4:  NGINX VIRTUALHOST CONFIGURATION 
+
+1. mkdir /opt/nginxroot/etc/nginx/sites-enabled
+2. mkdir /opt/nginxroot/etc/nginx/sites-available
+3. vi /opt/nginxroot/etc/nginx/nginx.conf ( or vi /etc/nginx/nginx.conf)
+
+ 
+include /opt/nginxroot/etc/nginx/sites-enabled/*;
+
+4. vi /etc/opt/nginxroot/etc/nginx/sites-available/mysite.com
+
+server {
+      listen 80;
+      server_name mysite.com;
+      root /var/www/apps/newapp/public;
+      error_log /opt/nginxroot/var/log/nginx/myapp_error.log;
+      access_log /opt/nginxroot/var/log/nginx/myapp_access.log;
+      index index.html;
+       }
+
+Links: http://wiki.nginx.org/NginxVirtualHostExample
+----------------------------------------------------------------------------------------
+
+CHAPTER 5:  NGINX TIPS AND TRICKS
+
+1.nginx -v                            To find out the version of nginx.
+
+2.nginx -V                             Great option to find out the configure arguments.
+
+3.nginx -t                             To test syntax of nginx config files.
+
+
+------------------------------------------------------------------------------------------
+
+
+Chapter6:  Nginx FAQ
+
+1.  Where is the default virtual host configuration specified in Nginx?
+
+   Its in /etc/nginx/nginx.conf file itself
+
+   The document root is /usr/html/index.html and error page in /usr/html/50x.html
+
+-----------------------------------------------------------------------------------------
+
+Chapter7: 
+
+2.
+
+4.
+
+ 
+4. nginx -t
+
+5. /etc/init.d/nginx restart
+
+
+
+
+
+Ubuntu/Debian style of Nginx installation:
+
+1. How to install nginx?
+   
+   #apt-get install nginx
+
+2. Configuration file:  /etc/nginx/nginx.conf
+  Additional Config file:  /etc/nginx/sites-enabled/default
+
+3. Service related   :  /etc/init.d/nginx <start/restart/reload/stop>
+
+
+
+4.  how to test nginx is working or not?
+    
+    1. /etc/init.d/nginx start
+      {If apache is already running in your system, close it and then run the above command}
+
+   2.  firefox -> http://localhost
+
+        "welcome to nginx" message will be displayed.
+
+5. What is the DocumentRoot for the above said html file?
+   
+   DocumentRoot is /var/www/nginx-default directory
+   DirectoryIndex is index.html inside /var/www/nginx-default directory.
+
+   The configuration file for the above is the configuration file, that is, /etc/nginx/sites-enabled/default file.
+
+6. How to make nginx to run multiple domains?
+
+http://articles.slicehost.com/2008/5/28/how-to-serve-multiple-domains
+
+---------------------------------------------------------------------------------------------------
+
+How to run a simple nginx site?
+
+-------------
+1.  Main Configuration file /etc/nginx/nginx.conf
+2.  Configuration file for individual sites:  /etc/nginx/sites-available
+                                          link: /etc/nginx/sites-enabled
+
+3.  You should manually create links for configuration files in sites-available for sites-enabled.
+
+1.  How to run a simple website with nginx.
+
+   cat >> /etc/hosts
+   192.168.1.3 www.ram.com
+Ctrl+D
+
+  mkdir /var/www/ram.com
+    cd /var/www/ram.com
+    touch index.html
+     vi index.html
+   Welcome to ram.com
+   :wq!
+
+3.     cd /etc/nginx/sites-available/
+   touch ram.com.conf
+   vi ram.com.conf
+
+server {
+   server_name www.ram.com;
+
+location / {
+          root /var/www/ram.com;
+          index index.html;
+           }
+}
+
+:wq!
+
+  4. ln -s /etc/nginx/sites-available/ram.com.conf /etc/nginx/sites-enabled/ram.com.conf
+  5.  /etc/init.d/nginx restart
+ 
+  6. elinks www.ram.com
+
+----------------------------------------------------------------------------------------------------
+
+How to run a mongrel application via NGINX?
+
+1.  Create an application, say /var/www/apps/railsfactory as usual and make it a perfect mongrel application.  Let the
+    mongrel run in 3000.
+
+2.  Now go to /etc/hosts
+ 
+    192.168.1.3   www.railsfactory.com
+
+    :wq
+
+3.  vi /etc/nginx/sites-available/railsfactory.com.conf
+   
+    server {
+            server_name www.railsfactory.com;
+           
+     location / {
+             root /var/www/apps/railsfactory/public;
+             proxy_pass http://localhost:3000;
+                };
+4.  nginx -t
+5.  /etc/init.d/nginx restart
+6.  elinks www.railsfactory.com should provide you with welcome aboard message
+  /say/hello should provide suitable message
+
+
+------------------------------------------------------------------------------------------------------
+
+Nginx with Passenger Notes
+
+
+1.  Remove nginx if you have already installed in your system:
+    apt-get remove nginx
+
+2.  Install passenger gem
+    #gem install passenger
+
+3.  Now install nginx module
+     #passenger-install-nginx-
+module
+
+4.  It will install nginx in /opt/nginx directory and hereafter all the things will be w.r.t /opt/nginx directory
+
+    Configuration file is /opt/nginx/conf/nginx.conf
+   
+    To start nginx => /opt/nginx/sbin/nginx
+
+    To stop nginx => ???
+
+5.  The installer would have automatically configured the nginx.conf file with the following lines:::  
+
+
+http {
+      ...
+      passenger_root /usr/lib/ruby/gems/1.8/gems/passenger-2.2.11;
+      passenger_ruby /usr/bin/ruby;
+      ...
+  }
+6.  Now, add a server block in the nginx.conf file (/opt/nginx/conf/nginx.conf file)
+  
+    As follows:
+
+    server {
+      listen 80;
+      server_name www.yourhost.com;
+      root /somewhere/public;
+      passenger_enabled on;
+      rails_env production(or development);
+   }
+
+7. /opt/nginx/sbin/nginx -t
+   to test the configuration file's syntax
+
+8.Hope you have created a rails application:
+
+  in /somewhere and made appropriate changes.
+
+9.  Now, start nginx:
+
+   #/opt/nginx/sbin/nginx
+10.  now, you are ready to run nginx-passenger combo.
+
+
+-------------------------------------------------------------------------------------------------------------------
+
+Installation Notes of Passenger nginx:
+
+Nginx with Passenger support was successfully installed.
+
+The Nginx configuration file (/opt/nginx/conf/nginx.conf)
+must contain the correct configuration options in order for Phusion Passenger
+to function correctly.
+
+This installer has already modified the configuration file for you! The
+following configuration snippet was inserted:
+
+  http {
+      ...
+      passenger_root /usr/lib/ruby/gems/1.8/gems/passenger-2.2.11;
+      passenger_ruby /usr/bin/ruby;
+      ...
+  }
+
+After you start Nginx, you are ready to deploy any number of Ruby on Rails
+applications on Nginx.
+
+Press ENTER to continue.
+
+Deploying a Ruby on Rails application: an example
+
+Suppose you have a Ruby on Rails application in /somewhere. Add a server block
+to your Nginx configuration file, set its root to /somewhere/public, and set
+'passenger_enabled on', like this:
+
+   server {
+      listen 80;
+      server_name www.yourhost.com;
+      root /somewhere/public;   # <--- be sure to point to 'public'!
+      passenger_enabled on;
+   }
+
+And that's it! You may also want to check the Users Guide for security and
+optimization tips and other useful information:
+
+  /usr/lib/ruby/gems/1.8/gems/passenger-2.2.11/doc/Users guide Nginx.html
+
+Enjoy Phusion Passenger, a product of Phusion (www.phusion.nl) :-)
+http://www.modrails.com/
+-------------------------------------------------------------------------------------------------------------
+
+
+NGINX PROXY for MONGREL CLUSTERS
+
+Nginx Proxy for a single mongrel instance:  (This is taken from a working virtual host file)
+
+server
+{
+  listen 192.168.1.3:80;
+  server_name ram.com;
+  root /root/sr/public;
+  index index.html;
+ 
+  location / {
+             proxy_pass http://localhost:3000/;
+            }
+
+
+------------------------------------------------------------------------------------------------------------------------
+
+Nginx proxy for multiple mongrel instances (clusters).
+
+1.  Create an application, say /var/www/apps/railsfactory as usual and make it a perfect mongrel application.  Let the
+    mongrel run in 3 clusters 8000, 8001, 8002
+
+2.  Now go to /etc/hosts
+ 
+    192.168.1.3   www.railsfactory.com
+
+    :wq
+
+3.  vi /etc/nginx/sites-available/railsfactory.com.conf
+   
+    upstream cluster {
+     server localhost:8000;
+     server localhost:8001;
+     server localhost:8002;
+    }
+
+   
+    server {
+            server_name www.railsfactory.com;
+           
+     location / {
+             root /var/www/apps/railsfactory/public;
+             proxy_pass http://cluster;
+                };
+4.  nginx -t
+5.  /etc/init.d/nginx restart
+6.  elinks www.railsfactory.com should provide you with welcome aboard message
+  /say/hello should provide suitable message
+
+
+--------------------------------------------------------------------------------------------------------------------
+
+Nginx Virtual Hosts configuration:
+
+sitename: seetha.com
+doc root : /var/www/seetha.com/
+
+
+
+1. cat /etc/hosts
+ 
+ 192.168.1.3 seetha.com
+
+
+2.  mkdir -p /var/www/seetha.com
+    cat > /var/www/seetha.com/index.html
+
+    welcome to seetha.com
+
+3.  cat >> /etc/nginx/sites-available/seetha.com.conf
+
+     server {
+
+               listen 192.168.1.3:80;
+               server_name seetha.com;
+                root /var/www/seetha.com;
+                index index.html;
+                }
+
+4. ln -s /etc/nginx/sites-availabe/seetha.com.conf /etc/nginx/sites-enabled/seetha.com.conf
+
+5. /etc/init.d/nginx restart
+
+
